@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Fantel Solar Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #0a2463;
+      --secondary: #3e92cc;
+      --accent: #2dc7ff;
+      --success: #4cb944;
+      --warning: #fca311;
+      --danger: #d90429;
+      --light: #f8f9fa;
+      --dark: #1e1e24;
+      --gray: #8d99ae;
+      --card-shadow: 0 10px 30px rgba(0,0,0,.08);
+      --transition: all .3s cubic-bezier(.25,.8,.25,1);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+    body{background:#f5f7fa;color:var(--dark)}
+    #login-page{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#f9d423 0%,#ff4e50 100%)}
+    .login-container{background:#fff;padding:40px;border-radius:15px;box-shadow:var(--card-shadow);width:100%;max-width:450px;text-align:center}
+    .logo{width:350px;height:150px;margin:0 auto 20px;background:url('https://i.postimg.cc/RFBGCpJY/Screenshot-20251014-121635-1.jpg') center/contain no-repeat}
+    .login-container h1{color:var(--primary);margin-bottom:10px}
+    .login-container p{color:var(--gray);margin-bottom:30px}
+    .form-group{margin-bottom:20px;text-align:left}
+    .form-group label{display:block;margin-bottom:8px;font-weight:500}
+    .form-group input,.form-group select,.form-group textarea{width:100%;padding:12px 15px;border:1px solid #ddd;border-radius:8px;font-size:16px}
+    .login-btn{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+    .error-message{color:var(--danger);margin-top:15px;display:none}
+
+    #app{display:none;min-height:100vh}
+    header{background:#fff;padding:15px 30px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.05);position:sticky;top:0;z-index:10}
+    .header-left{display:flex;align-items:center}
+    .header-logo{width:150px;height:80px;margin-right:15px;background:url('https://i.postimg.cc/RFBGCpJY/Screenshot-20251014-121635-1.jpg') center/contain no-repeat}
+    header h1{color:var(--primary);font-size:18px}
+    .user-info{display:flex;align-items:center;gap:20px}
+    .logout-btn{background:var(--danger);color:#fff;border:none;padding:8px 15px;border-radius:5px;cursor:pointer}
+
+    .sidebar{width:280px;background:#fff;height:calc(100vh - 70px);position:fixed;left:0;top:70px;box-shadow:2px 0 10px rgba(0,0,0,.05);overflow-y:auto}
+    .sidebar-menu{list-style:none;padding:20px 0}
+    .sidebar-menu li{padding:12px 25px;cursor:pointer;display:flex;align-items:center;gap:12px;color:var(--dark)}
+    .sidebar-menu li i{width:18px;text-align:center}
+    .sidebar-menu li.active{background:var(--primary);color:#fff;border-radius:6px}
+
+    .main-content{margin-left:280px;padding:30px;min-height:calc(100vh - 70px)}
+    .module-section{display:none}
+    .module-section.active{display:block}
+    .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}
+    .section-header h2{color:var(--primary);font-size:20px}
+    .section-actions{display:flex;gap:10px}
+    .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-outline{background:transparent;border:1px solid var(--primary);color:var(--primary)}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-success{background:var(--success);color:#fff}
+
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:30px}
+    .stat-card{background:#fff;padding:20px;border-radius:10px;box-shadow:var(--card-shadow)}
+    .stat-card h3{font-size:14px;color:var(--gray);margin-bottom:10px}
+    .stat-card .value{font-size:28px;font-weight:600;color:var(--primary)}
+
+    .card{background:#fff;border-radius:10px;box-shadow:var(--card-shadow);padding:20px;margin-bottom:30px;overflow-x:auto}
+    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+
+    table{width:100%;border-collapse:collapse;margin-top:10px;min-width:600px}
+    th,td{padding:12px 15px;text-align:left;border-bottom:1px solid #eee}
+    th{background:#f8f9fa;font-weight:600}
+
+    .status-success{color:var(--success);font-weight:500}
+    .status-warning{color:var(--warning);font-weight:500}
+    .status-danger{color:var(--danger);font-weight:500}
+
+    .filters{display:flex;gap:15px;margin-bottom:20px;flex-wrap:wrap}
+    .filters input,.filters select{padding:10px 15px;border:1px solid #ddd;border-radius:8px}
+
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+    .modal-content{background:#fff;border-radius:10px;width:90%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+    .modal-header{padding:20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+    .close-modal{background:none;border:none;font-size:24px;cursor:pointer}
+    .modal-body{padding:20px}
+    .form-row{display:flex;gap:15px;margin-bottom:15px}
+    .form-row .form-group{flex:1;margin-bottom:0}
+    .form-actions{padding:20px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px}
+
+    .confirmation-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+    .confirmation-content{background:#fff;border-radius:10px;padding:30px;max-width:400px;text-align:center}
+    .confirmation-buttons{display:flex;gap:10px;justify-content:center;margin-top:20px}
+
+    .activity-insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+    .insight-card{background:#fff;border-radius:10px;box-shadow:var(--card-shadow);padding:20px}
+    .insight-card h3{color:var(--primary);margin-bottom:15px;display:flex;align-items:center;gap:10px}
+
+    /* role visibility helper classes */
+    .admin-only,.management-only,.sales-only,.inventory-only,.marketing-only,.accountant-only,.unit-manager-only{display:none}
+
+    @media(max-width:900px){
+      .sidebar{position:relative;width:100%;height:auto;top:0}
+      .main-content{margin-left:0;padding:15px}
+      header{flex-direction:column;gap:10px;align-items:flex-start}
+      .card{overflow-x:auto}
+      table{min-width:100%}
+    }
+
+    .loading{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,.8);z-index:9999;justify-content:center;align-items:center;flex-direction:column}
+    .loading-spinner{width:50px;height:50px;border:5px solid #f3f3f3;border-top:5px solid var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:15px}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <!-- ========== LOADING ========== -->
+  <div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+    <p>Loading data...</p>
+  </div>
+
+  <!-- ========== LOGIN ========== -->
+  <div id="login-page">
+    <div class="login-container">
+      <div class="logo"></div>
+      <h1>Fantel Activity Dashboard</h1>
+      <p>Secure Sign-In</p>
+
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="Enter your username">
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter your password">
+      </div>
+
+      <div class="form-group">
+        <label>Role</label>
+        <select id="role-select">
+          <option value="">(Choose Role)</option>
+          <option>System Administrator</option>
+          <option>Management</option>
+          <option>Sales Representative</option>
+          <option>Inventory Manager</option>
+          <option>Marketing Officer</option>
+          <option>Accountant</option>
+          <option>Unit Manager</option>
+        </select>
+      </div>
+
+      <button class="login-btn" onclick="login()">Login</button>
+      <div id="login-error" class="error-message">Invalid username or password</div>
+    </div>
+  </div>
+
+  <!-- ========== MAIN APP ========== -->
+  <div id="app">
+    <header>
+      <div class="header-left">
+        <div class="header-logo"></div>
+        <h1>Fantel Solar Portal</h1>
+      </div>
+      <div class="user-info">
+        <span id="date-display"></span>
+        <span id="user-role-display"></span>
+        <span id="username-display"></span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <div class="sidebar">
+      <ul class="sidebar-menu">
+        <!-- ===== ADMIN ===== -->
+        <li data-target="admin-module" class="admin-only"><i class="fas fa-user-shield"></i> Admin</li>
+        <li data-target="branch-module" class="admin-only management-only"><i class="fas fa-building"></i> Branch Management</li>
+
+        <!-- ===== MANAGEMENT ===== -->
+        <li data-target="dashboard-module" class="management-only"><i class="fas fa-tachometer-alt"></i> Dashboard</li>
+        <li data-target="management-module" class="management-only"><i class="fas fa-cogs"></i> Management</li>
+        <li data-target="activity-insights" class="management-only"><i class="fas fa-chart-bar"></i> Activity Insights</li>
+
+        <!-- ===== UNIT MANAGER ===== -->
+        <li data-target="unit-manager-module" class="unit-manager-only"><i class="fas fa-users-cog"></i> Team Targets</li>
+
+        <!-- ===== ACCOUNTANT ===== -->
+        <li data-target="accountant-module" class="accountant-only"><i class="fas fa-calculator"></i> Sales Performance</li>
+        <li data-target="accountant-stock-module" class="accountant-only"><i class="fas fa-boxes"></i> Stock Overview</li>
+
+        <!-- ===== SALES REP ===== -->
+        <li data-target="customer-module" class="sales-only"><i class="fas fa-users"></i> Customers</li>
+        <li data-target="sales-module" class="sales-only"><i class="fas fa-shopping-cart"></i> Sales</li>
+        <li data-target="feedback-module" class="sales-only"><i class="fas fa-comment"></i> Customer Feedback</li>
+
+        <!-- ===== INVENTORY ===== -->
+        <li data-target="inventory-module" class="inventory-only"><i class="fas fa-boxes"></i> Inventory</li>
+
+        <!-- ===== MARKETING ===== -->
+        <li data-target="marketing-module" class="marketing-only"><i class="fas fa-chart-line"></i> Marketing</li>
+        <li data-target="marketing-inventory-summary" class="marketing-only"><i class="fas fa-box"></i> Inventory Summary</li>
+        <li data-target="price-change-log" class="marketing-only management-only admin-only"><i class="fas fa-tags"></i> Price Changes</li>
+
+        <!-- ===== FEEDBACK ===== -->
+        <li data-target="feedback-management" class="management-only marketing-only"><i class="fas fa-comments"></i> Feedback Management</li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+      <!-- ===== ADMIN ===== -->
+      <div id="admin-module" class="module-section admin-only">
+        <div class="section-header">
+          <h2>System Administration</h2>
+          <div class="section-actions">
+            <button class="btn btn-primary" onclick="showAddStaffModal()"><i class="fas fa-plus"></i> Add Staff</button>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Total Users</h3><div class="value" id="total-users">0</div></div>
+          <div class="stat-card"><h3>Total Customers</h3><div class="value" id="total-customers">0</div></div>
+          <div class="stat-card"><h3>System Status</h3><div class="value status-success">Online</div></div>
+          <div class="stat-card"><h3>Last Backup</h3><div class="value" id="last-backup">Never</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>User Management</h3></div>
+          <table><thead><tr><th>Username</th><th>Full Name</th><th>Role</th><th>Branch</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="admin-user-management-body"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Stock Management</h3></div>
+          <table><thead><tr><th>Product</th><th>Type</th><th>Spec</th><th>Qty</th><th>Cost</th><th>Selling</th><th>Margin</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="admin-stock-management-body"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Stock History</h3></div>
+          <table><thead><tr><th>Date</th><th>Product</th><th>Type</th><th>Qty</th><th>Cost</th><th>Total</th><th>Added By</th></tr></thead>
+            <tbody id="admin-stock-history-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== MANAGEMENT DASHBOARD ===== -->
+      <div id="dashboard-module" class="module-section management-only">
+        <div class="section-header"><h2>Management Dashboard</h2></div>
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Daily Sales Count</h3><div class="value" id="daily-sales">0</div></div>
+          <div class="stat-card"><h3>Daily Revenue</h3><div class="value" id="daily-revenue">₦0</div></div>
+          <div class="stat-card"><h3>Daily Profit</h3><div class="value" id="daily-profit">₦0</div></div>
+          <div class="stat-card"><h3>Daily Discount</h3><div class="value" id="daily-discount">₦0</div></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Monthly Sales Count</h3><div class="value" id="current-month-sales">0</div></div>
+          <div class="stat-card"><h3>Monthly Revenue</h3><div class="value" id="current-month-revenue">₦0</div></div>
+          <div class="stat-card"><h3>Monthly Profit</h3><div class="value" id="current-month-profit">₦0</div></div>
+          <div class="stat-card"><h3>Low Stock Items</h3><div class="value" id="low-stock-count">0</div></div>
+        </div>
+        <div class="filters">
+          <select id="sales-rep-filter" onchange="filterSalesByRep()"><option value="all">All Sales Reps</option></select>
+          <select id="branch-filter" onchange="filterSalesByBranch()"><option value="all">All Branches</option></select>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Today's Sales</h3></div>
+          <table><thead><tr><th>Product</th><th>Customer</th><th>Sales Rep</th><th>Branch</th><th>Amount</th><th>Profit</th><th>Time</th></tr></thead>
+            <tbody id="sales-table-body"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Inventory Overview</h3></div>
+          <table><thead><tr><th>Product</th><th>Type</th><th>Spec</th><th>Qty</th><th>Cost</th><th>Selling</th><th>Status</th></tr></thead>
+            <tbody id="inventory-table-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== UNIT MANAGER ===== -->
+      <div id="unit-manager-module" class="module-section unit-manager-only">
+        <div class="section-header"><h2>Team Targets</h2></div>
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Active Reps</h3><div class="value" id="um-rep-count">0</div></div>
+          <div class="stat-card"><h3>Monthly Target</h3><div class="value" id="um-team-target">₦0</div></div>
+          <div class="stat-card"><h3>Team Achieved</h3><div class="value" id="um-team-achieved">₦0</div></div>
+          <div class="stat-card"><h3>Team Progress</h3><div class="value" id="um-team-progress">0%</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Sales Team Performance</h3></div>
+          <table><thead><tr><th>Rep</th><th>Branch</th><th>Target</th><th>Achieved</th><th>Remaining</th><th>Progress</th></tr></thead>
+            <tbody id="um-team-performance-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== ACCOUNTANT ===== -->
+      <div id="accountant-module" class="module-section accountant-only">
+        <div class="section-header"><h2>Sales Performance</h2></div>
+        <div class="card">
+          <div class="card-header"><h3>Reps Performance</h3></div>
+          <table><thead><tr><th>Rep</th><th>Branch</th><th>Sales Count</th><th>Revenue</th><th>Profit</th><th>Discount Given</th></tr></thead>
+            <tbody id="acct-sales-performance-body"></tbody></table>
+        </div>
+      </div>
+      <div id="accountant-stock-module" class="module-section accountant-only">
+        <div class="section-header"><h2>Stock Overview</h2></div>
+        <div class="card">
+          <div class="card-header"><h3>Low Stock Alerts</h3></div>
+          <table><thead><tr><th>Product</th><th>Type</th><th>Qty</th><th>Cost Price</th><th>Selling Price</th></tr></thead>
+            <tbody id="acct-low-stock-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== INVENTORY ===== -->
+      <div id="inventory-module" class="module-section inventory-only">
+        <div class="section-header">
+          <h2>Inventory Management</h2>
+          <div class="section-actions">
+            <button class="btn btn-primary" onclick="showAddQuantityModal()"><i class="fas fa-plus"></i> Add Quantity</button>
+            <button class="btn btn-outline" onclick="showAddSerialModal()"><i class="fas fa-barcode"></i> Add Serial Numbers</button>
+          </div>
+        </div>
+        <div class="filters">
+          <input type="text" id="inventory-search" placeholder="Search inventory..." onkeyup="filterInventory()">
+          <select id="category-filter" onchange="filterInventory()">
+            <option value="all">All Categories</option>
+            <option>Solar Panels</option><option>Batteries</option><option>Inverters</option><option>Cables</option><option>Connectors</option><option>Breakers</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Inventory List</h3></div>
+          <table><thead><tr><th>Product</th><th>Type</th><th>Spec</th><th>Serial</th><th>Qty</th><th>Cost</th><th>Selling</th><th>Margin</th><th>Status</th></tr></thead>
+            <tbody id="inventory-table-body-2"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== SALES REP ===== -->
+      <div id="sales-module" class="module-section sales-only">
+        <div class="section-header">
+          <h2>Sales Management</h2>
+          <div class="section-actions">
+            <button class="btn btn-primary" onclick="showRecordSaleModal()"><i class="fas fa-plus"></i> Record Sale</button>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Monthly Target</h3><div class="value" id="sales-target">₦0</div></div>
+          <div class="stat-card"><h3>Achieved</h3><div class="value" id="sales-achieved">₦0</div></div>
+          <div class="stat-card"><h3>Remaining</h3><div class="value" id="sales-remaining">₦0</div></div>
+          <div class="stat-card"><h3>Progress</h3><div class="value" id="sales-progress">0%</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>My Today's Sales</h3></div>
+          <table><thead><tr><th>Product</th><th>Customer</th><th>Amount</th><th>Discount</th><th>Profit</th><th>Time</th></tr></thead>
+            <tbody id="sales-table-body-2"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== CUSTOMER ===== -->
+      <div id="customer-module" class="module-section sales-only">
+        <div class="section-header">
+          <h2>Customer Management</h2>
+          <div class="section-actions">
+            <button class="btn btn-primary" onclick="showAddCustomerModal()"><i class="fas fa-plus"></i> Add Customer</button>
+          </div>
+        </div>
+        <div class="filters"><input type="text" id="customer-search" placeholder="Search customers (name or phone)..." onkeyup="filterCustomers()"></div>
+        <div class="card">
+          <div class="card-header"><h3>Customers</h3></div>
+          <table><thead><tr><th>Name</th><th>Phone</th><th>LGA</th><th>Address</th><th>Purchases</th><th>Last Purchase</th><th>Actions</th></tr></thead>
+            <tbody id="customer-table-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== MARKETING ===== -->
+      <div id="marketing-module" class="module-section marketing-only">
+        <div class="section-header">
+          <h2>Marketing Management</h2>
+          <div class="section-actions">
+            <button class="btn btn-outline" onclick="showAddStockModal()"><i class="fas fa-plus"></i> Add Product</button>
+            <button class="btn btn-success" onclick="exportMarketingReport()"><i class="fas fa-file-export"></i> Export Report</button>
+          </div>
+        </div>
+        <div class="filters">
+          <input type="date" id="marketing-from-date"><input type="date" id="marketing-to-date">
+          <select id="marketing-category-filter" onchange="updateMarketingReport()">
+            <option value="all">All Categories</option>
+            <option>Solar Panels</option><option>Batteries</option><option>Inverters</option><option>Cables</option><option>Connectors</option><option>Breakers</option>
+          </select>
+          <button class="btn btn-primary" onclick="updateMarketingReport()">Apply</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Marketing Report</h3></div>
+          <table><thead><tr><th>Product</th><th>Units</th><th>Revenue</th><th>Discount</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead>
+            <tbody id="marketing-report-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== MARKETING INVENTORY SUMMARY ===== -->
+      <div id="marketing-inventory-summary" class="module-section marketing-only">
+        <div class="section-header"><h2>Inventory Summary</h2></div>
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Total Products</h3><div class="value" id="mis-total-products">0</div></div>
+          <div class="stat-card"><h3>Total Qty</h3><div class="value" id="mis-total-qty">0</div></div>
+          <div class="stat-card"><h3>Stock Value (Cost)</h3><div class="value" id="mis-stock-value">₦0</div></div>
+          <div class="stat-card"><h3>Est. Profit</h3><div class="value" id="mis-est-profit">₦0</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Products</h3></div>
+          <table><thead><tr><th>Product</th><th>Type</th><th>Qty</th><th>Cost</th><th>Selling</th><th>Min Disc %</th><th>Max Disc %</th></tr></thead>
+            <tbody id="mis-products-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== PRICE CHANGE LOG ===== -->
+      <div id="price-change-log" class="module-section marketing-only management-only admin-only">
+        <div class="section-header"><h2>Recent Price Changes</h2></div>
+        <div class="card">
+          <table><thead><tr><th>Date</th><th>Product</th><th>Old Price</th><th>New Price</th><th>Changed By</th></tr></thead>
+            <tbody id="price-change-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== FEEDBACK ===== -->
+      <div id="feedback-module" class="module-section sales-only">
+        <div class="section-header">
+          <h2>Customer Feedback</h2>
+          <div class="section-actions">
+            <button class="btn btn-primary" onclick="showAddFeedbackModal()"><i class="fas fa-plus"></i> Add Feedback</button>
+          </div>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>Date</th><th>Customer</th><th>Type</th><th>Feedback</th><th>Actions</th></tr></thead>
+            <tbody id="feedback-table-body"></tbody></table>
+        </div>
+      </div>
+
+      <div id="feedback-management" class="module-section management-only marketing-only">
+        <div class="section-header">
+          <h2>Feedback Management</h2>
+          <div class="section-actions">
+            <button class="btn btn-primary" onclick="refreshFeedbackData()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            <button class="btn btn-success" onclick="exportFeedbackReport()"><i class="fas fa-file-export"></i> Export</button>
+          </div>
+        </div>
+        <div class="filters">
+          <select id="feedback-type-filter" onchange="filterFeedback()">
+            <option value="all">All Types</option><option>Complaint</option><option>Suggestion</option><option>Enquiry</option>
+          </select>
+          <input type="text" id="feedback-search" placeholder="Search feedback..." onkeyup="filterFeedback()">
+          <select id="feedback-branch-filter" onchange="filterFeedback()"><option value="all">All Branches</option></select>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>Date</th><th>Customer</th><th>Phone</th><th>Type</th><th>Feedback</th><th>Branch</th><th>Recorded By</th><th>Actions</th></tr></thead>
+            <tbody id="feedback-management-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== BRANCH MANAGEMENT ===== -->
+      <div id="branch-module" class="module-section admin-only management-only">
+        <div class="section-header">
+          <h2>Branch Management</h2>
+          <div class="section-actions">
+            <button class="btn btn-primary" onclick="showAddBranchModal()"><i class="fas fa-plus"></i> Add Branch</button>
+          </div>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>Branch</th><th>Manager</th><th>Contact</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="branch-management-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODALS ===== -->
+  <!-- Add Product (Marketing) -->
+  <div id="add-stock-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Add New Product</h2>
+        <button class="close-modal" onclick="closeAddStockModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="stock-type" onchange="updateSpecificationField()">
+              <option value="">Select Type</option>
+              <option>Solar Panels</option><option>Batteries</option><option>Inverters</option><option>Cables</option><option>Connectors</option><option>Breakers</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Product Name</label>
+            <input type="text" id="stock-name" placeholder="Enter product name">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label id="spec-label">Specification</label>
+            <input type="text" id="stock-spec" placeholder="Enter specification">
+          </div>
+          <div class="form-group">
+            <label>Cost Price (₦)</label>
+            <input type="text" id="stock-cost-price" placeholder="Enter cost price" oninput="formatInputAsNumber(this); calculateSellingPriceFromCost()">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Markup %</label>
+            <input type="number" id="stock-markup" value="20" min="0" oninput="calculateSellingPriceFromCost()">
+          </div>
+          <div class="form-group">
+            <label>Selling Price (₦)</label>
+            <input type="text" id="stock-selling-price" readonly>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Min Discount %</label>
+            <input type="number" id="stock-min-disc" value="0" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label>Max Discount %</label>
+            <input type="number" id="stock-max-disc" value="5" min="0" max="100">
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeAddStockModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addStock()">Add Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Product -->
+  <div id="edit-stock-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Edit Product</h2>
+        <button class="close-modal" onclick="closeEditStockModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-stock-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="edit-stock-type">
+              <option value="">Select Type</option>
+              <option>Solar Panels</option><option>Batteries</option><option>Inverters</option><option>Cables</option><option>Connectors</option><option>Breakers</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Product Name</label>
+            <input type="text" id="edit-stock-name">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Specification</label>
+            <input type="text" id="edit-stock-spec">
+          </div>
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="edit-stock-quantity" min="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cost Price (₦)</label>
+            <input type="text" id="edit-stock-cost" oninput="formatInputAsNumber(this); calculateEditSellingPrice()">
+          </div>
+          <div class="form-group">
+            <label>Markup %</label>
+            <input type="number" id="edit-stock-markup" min="0" oninput="calculateEditSellingPrice()">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Selling Price (₦)</label>
+            <input type="text" id="edit-stock-selling" readonly>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="edit-stock-status">
+              <option>In Stock</option><option>Low Stock</option><option>Out of Stock</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Min Discount %</label>
+            <input type="number" id="edit-stock-min-disc" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label>Max Discount %</label>
+            <input type="number" id="edit-stock-max-disc" min="0" max="100">
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeEditStockModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="updateStock()">Update Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Quantity -->
+  <div id="add-quantity-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Stock Quantity</h2>
+        <button class="close-modal" onclick="closeAddQuantityModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Product</label>
+          <select id="add-quantity-product"></select>
+        </div>
+        <div class="form-group">
+          <label>Quantity to Add</label>
+          <input type="number" id="add-quantity" min="1" value="1">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Serial Prefix (e.g., ABC)</label>
+            <input type="text" id="add-quantity-serial-prefix" placeholder="ABC">
+          </div>
+          <div class="form-group">
+            <label>Serial Start (e.g., 001)</label>
+            <input type="text" id="add-quantity-serial-start" placeholder="001">
+          </div>
+          <div class="form-group">
+            <label>Serial End (e.g., 040)</label>
+            <input type="text" id="add-quantity-serial-end" placeholder="040">
+          </div>
+        </div>
+        <p style="color:var(--gray); font-size: 0.9em; margin-top: -10px;">Leave blank for non-serialized items or if adding existing serials manually.</p>
+        <div class="form-group">
+          <label>Additional Serial Numbers (comma separated)</label>
+          <input type="text" id="add-quantity-serial-manual" placeholder="ABC123,ABC124">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeAddQuantityModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addStockQuantity()">Add Quantity</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Serial Numbers Only -->
+  <div id="add-serial-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Serial Numbers</h2>
+        <button class="close-modal" onclick="closeAddSerialModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Product</label>
+          <select id="add-serial-product"></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Serial Prefix (e.g., ABC)</label>
+            <input type="text" id="add-serial-prefix" placeholder="ABC">
+          </div>
+          <div class="form-group">
+            <label>Serial Start (e.g., 001)</label>
+            <input type="text" id="add-serial-start" placeholder="001">
+          </div>
+          <div class="form-group">
+            <label>Serial End (e.g., 040)</label>
+            <input type="text" id="add-serial-end" placeholder="040">
+          </div>
+        </div>
+        <p style="color:var(--gray); font-size: 0.9em; margin-top: -10px;">Generates serials like ABC001, ABC002...ABC040</p>
+        <div class="form-group">
+          <label>Additional Serial Numbers (comma separated)</label>
+          <input type="text" id="add-serial-manual" placeholder="ABC123,ABC124">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeAddSerialModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addSerialNumber()">Add Serials</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Record Sale -->
+  <div id="record-sale-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Record Sale</h2>
+        <button class="close-modal" onclick="closeRecordSaleModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Product</label>
+            <select id="sale-product" onchange="updateSaleDetails()"></select>
+          </div>
+          <div class="form-group">
+            <label>Customer</label>
+            <select id="sale-customer"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="sale-quantity" min="1" value="1" onchange="updateSaleDetails()">
+          </div>
+          <div class="form-group">
+            <label>Discount (₦)</label>
+            <input type="text" id="sale-discount" value="0" oninput="formatInputAsNumber(this); updateSaleDetails()">
+            <small style="color:var(--gray)" id="sale-discount-hint">Max discount: ₦0 (0%)</small>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Branch (auto)</label>
+            <input type="text" id="sale-branch" readonly>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Total Amount (₦)</label>
+            <input type="text" id="sale-amount" readonly>
+          </div>
+          <div class="form-group">
+            <label>Est. Profit (₦)</label>
+            <input type="text" id="sale-profit" readonly>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeRecordSaleModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="recordSale()">Record Sale</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Customer -->
+  <div id="add-customer-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Customer</h2>
+        <button class="close-modal" onclick="closeAddCustomerModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label>First Name</label><input id="customer-firstname"></div>
+          <div class="form-group"><label>Last Name</label><input id="customer-lastname"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Phone</label><input id="customer-phone"></div>
+          <div class="form-group"><label>LGA</label><input id="customer-lga"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2"><label>House Number & Street</label><input id="customer-house"></div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeAddCustomerModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addCustomer()">Add Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Staff -->
+  <div id="add-staff-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Staff</h2>
+        <button class="close-modal" onclick="closeAddStaffModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label>Username</label><input id="staff-username"></div>
+          <div class="form-group"><label>Full Name</label><input id="staff-fullname"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Role</label>
+            <select id="staff-role">
+              <option>System Administrator</option><option>Management</option><option>Sales Representative</option>
+              <option>Inventory Manager</option><option>Marketing Officer</option><option>Accountant</option><option>Unit Manager</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Password</label><input id="staff-password" type="password"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Branch</label><select id="staff-branch"></select></div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeAddStaffModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addStaff()">Add Staff</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Branch -->
+  <div id="add-branch-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Branch</h2>
+        <button class="close-modal" onclick="closeAddBranchModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label>Branch Name</label><input id="branch-name"></div>
+          <div class="form-group"><label>Manager</label><input id="branch-manager"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Contact</label><input id="branch-contact"></div>
+          <div class="form-group"><label>Address</label><input id="branch-address"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Status</label>
+            <select id="branch-status"><option>Active</option><option>Inactive</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeAddBranchModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addBranch()">Add Branch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Feedback -->
+  <div id="add-feedback-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Customer Feedback</h2>
+        <button class="close-modal" onclick="closeAddFeedbackModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label>Customer</label>
+            <select id="feedback-customer">
+              <option value="">Select Customer</option>
+              <option value="new">+ Add New Customer</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Type</label>
+            <select id="feedback-type">
+              <option>Complaint</option><option>Suggestion</option><option>Enquiry</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Branch</label><select id="feedback-branch"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2"><label>Feedback</label><textarea id="feedback-text" rows="4"></textarea></div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeAddFeedbackModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addFeedback()">Add Feedback</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation -->
+  <div id="confirmation-modal" class="confirmation-modal">
+    <div class="confirmation-content">
+      <h3 id="confirmation-message">Are you sure?</h3>
+      <div class="confirmation-buttons">
+        <button class="btn btn-outline" onclick="closeConfirmationModal()">Cancel</button>
+        <button class="btn btn-danger" id="confirm-action-btn">Yes, continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCRIPT ===== -->
+  <script>
+    /* ========== CONFIG ========== */
+    const SUPABASE_URL = 'https://ecvkqmfrvljtuydlrnay.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjdmtxbWZydmxqdHV5ZGxybmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzY0NDEsImV4cCI6MjA3ODkxMjQ0MX0.yerBiI2BD8yUVciOT4_Jn5Cg3n_FrcVjdrwoHGNtWIQ';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const LS = {
+      inventory: 'fantel_inventory',
+      sales: 'fantel_sales',
+      customers: 'fantel_customers',
+      users: 'fantel_users',
+      currentUser: 'fantel_current_user',
+      salesTargets: 'fantel_sales_targets',
+      stockHistory: 'fantel_stock_history',
+      feedback: 'fantel_feedback',
+      branches: 'fantel_branches',
+      priceChanges: 'fantel_price_changes'
+    };
+
+    /* ========== DEFAULT DATA ========== */
+    const defaultUsers = [
+      { id: 1, username: 'admin', name: 'System Admin', role: 'System Administrator', password: 'admin123', branch: 'Portable Solar', lastLogin: '', status: 'Active' },
+      { id: 2, username: 'inventory', name: 'Inventory Manager', role: 'Inventory Manager', password: 'inventory123', branch: 'Portable Solar', lastLogin: '', status: 'Active' },
+      { id: 3, username: 'marketing', name: 'Marketing Officer', role: 'Marketing Officer', password: 'marketing123', branch: 'Marketing', lastLogin: '', status: 'Active' },
+      { id: 4, username: 'management', name: 'Management User', role: 'Management', password: 'management123', branch: 'Portable Solar', lastLogin: '', status: 'Active' },
+      { id: 5, username: 'sales1', name: 'Sales Rep One', role: 'Sales Representative', password: 'sales1', branch: 'Portable Solar', lastLogin: '', status: 'Active' },
+      { id: 6, username: 'accountant', name: 'Chief Accountant', role: 'Accountant', password: 'accountant123', branch: 'Portable Solar', lastLogin: '', status: 'Active' },
+      { id: 7, username: 'unitmanager', name: 'Unit Manager', role: 'Unit Manager', password: 'unit123', branch: 'Portable Solar', lastLogin: '', status: 'Active' }
+    ];
+    const defaultBranches = [
+      { id: 1, name: 'Portable Solar', manager: 'John Doe', contact: '08012345678', address: '123 Main Str, Lagos', status: 'Active' },
+      { id: 2, name: 'High End Solar', manager: 'Jane Smith', contact: '08023456789', address: '456 High Str, Lagos', status: 'Active' }
+    ];
+    const defaultInventory = [
+      { id: 1, type: 'Solar Panels', name: 'SolarPro 300W', spec: '300W Mono', serial: 'SP300-001', quantity: 10, costPrice: 50000, sellingPrice: 65000, profitMargin: 30, status: 'In Stock', minDiscount: 0, maxDiscount: 5 },
+      { id: 2, type: 'Batteries', name: 'Fantel 200Ah', spec: '12V 200Ah', serial: 'FB200-012', quantity: 5, costPrice: 120000, sellingPrice: 150000, profitMargin: 25, status: 'In Stock', minDiscount: 0, maxDiscount: 3 }
+    ];
+    const defaultCustomers = [
+      { id: 1, firstName: 'Jide', lastName: 'Olawale', phone: '08012345678', lga: 'Lagos Mainland', house: '25 Broad Str', totalPurchases: 0, lastPurchase: null }
+    ];
+    const defaultSales = [], defaultStockHistory = [], defaultFeedback = [], defaultPriceChanges = [];
+
+    /* ========== GLOBAL STATE ========== */
+    let inventory = JSON.parse(localStorage.getItem(LS.inventory)) || defaultInventory.slice();
+    let sales = JSON.parse(localStorage.getItem(LS.sales)) || defaultSales.slice();
+    let customers = JSON.parse(localStorage.getItem(LS.customers)) || defaultCustomers.slice();
+    let users = JSON.parse(localStorage.getItem(LS.users)) || defaultUsers.slice();
+    let currentUser = JSON.parse(localStorage.getItem(LS.currentUser)) || null;
+    let salesTargets = JSON.parse(localStorage.getItem(LS.salesTargets)) || [];
+    let stockHistory = JSON.parse(localStorage.getItem(LS.stockHistory)) || defaultStockHistory.slice();
+    let feedback = JSON.parse(localStorage.getItem(LS.feedback)) || defaultFeedback.slice();
+    let branches = JSON.parse(localStorage.getItem(LS.branches)) || defaultBranches.slice();
+    let priceChanges = JSON.parse(localStorage.getItem(LS.priceChanges)) || defaultPriceChanges.slice();
+    let isAddingCustomerForFeedback = false;
+
+    /* ========== UTILITIES ========== */
+    async function hashPassword(str) {
+      if (!str) return '';
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function formatInputAsNumber(inp) { const v = inp.value.replace(/[^0-9]/g, ''); inp.value = v ? parseInt(v, 10).toLocaleString('en-US') : ''; }
+    function parseFormattedNumber(str) { if (!str) return 0; return Number(str.replace(/,/g, '')); }
+    function formatCurrency(n) { return '₦' + (Number(n) || 0).toLocaleString(); }
+    function explodeRange(range) {
+      const m = range.trim().match(/^([A-Za-z0-9]+)(\d+)-(\d+)$/);
+      if (!m) return range.split(',').map(s => s.trim()).filter(Boolean);
+      const [, prefix, start, end] = m;
+      const list = [];
+      const startNum = Number(start);
+      const endNum = Number(end);
+      if (isNaN(startNum) || isNaN(endNum) || startNum > endNum) return []; // Handle invalid range
+      for (let i = startNum; i <= endNum; i++) list.push(prefix + i.toString().padStart(start.length, '0'));
+      return list;
+    }
+
+    /* ========== SYNC ========== */
+    async function syncWithSupabase() {
+      try { 
+        await loadFromSupabase(); 
+        console.log('Data loaded from Supabase successfully');
+      } catch (e) { 
+        console.log('Supabase not available or load failed, using localStorage', e); 
+      }
+    }
+    async function loadFromSupabase() {
+        const { data: inv, error: invError } = await supabase.from('inventory').select('*');
+        if (inv && !invError) inventory = inv;
+        else console.warn('Failed to load inventory from Supabase:', invError);
+
+        const { data: sal, error: salError } = await supabase.from('sales').select('*');
+        if (sal && !salError) sales = sal;
+        else console.warn('Failed to load sales from Supabase:', salError);
+
+        const { data: cust, error: custError } = await supabase.from('customers').select('*');
+        if (cust && !custError) customers = cust;
+        else console.warn('Failed to load customers from Supabase:', custError);
+
+        const { data: usr, error: usrError } = await supabase.from('users').select('*');
+        if (usr && !usrError) users = usr;
+        else console.warn('Failed to load users from Supabase:', usrError);
+
+        const { data: tar, error: tarError } = await supabase.from('sales_targets').select('*');
+        if (tar && !tarError) salesTargets = tar;
+        else console.warn('Failed to load sales_targets from Supabase:', tarError);
+
+        const { data: sh, error: shError } = await supabase.from('stock_history').select('*');
+        if (sh && !shError) stockHistory = sh;
+        else console.warn('Failed to load stock_history from Supabase:', shError);
+
+        const { data: fb, error: fbError } = await supabase.from('feedback').select('*');
+        if (fb && !fbError) feedback = fb;
+        else console.warn('Failed to load feedback from Supabase:', fbError);
+
+        const { data: br, error: brError } = await supabase.from('branches').select('*');
+        if (br && !brError) branches = br;
+        else console.warn('Failed to load branches from Supabase:', brError);
+
+        const { data: pc, error: pcError } = await supabase.from('price_changes').select('*');
+        if (pc && !pcError) priceChanges = pc;
+        else console.warn('Failed to load price_changes from Supabase:', pcError);
+
+        // After loading, ensure users are migrated if needed
+        await migrateUsersToHashedPasswords();
+    }
+    async function saveToSupabase() {
+        try {
+            const { error: invError } = await supabase.from('inventory').upsert(inventory);
+            if (invError) console.warn('Failed to save inventory to Supabase:', invError);
+
+            const { error: salError } = await supabase.from('sales').upsert(sales);
+            if (salError) console.warn('Failed to save sales to Supabase:', salError);
+
+            const { error: custError } = await supabase.from('customers').upsert(customers);
+            if (custError) console.warn('Failed to save customers to Supabase:', custError);
+
+            const { error: usrError } = await supabase.from('users').upsert(users);
+            if (usrError) console.warn('Failed to save users to Supabase:', usrError);
+
+            const { error: tarError } = await supabase.from('sales_targets').upsert(salesTargets);
+            if (tarError) console.warn('Failed to save sales_targets to Supabase:', tarError);
+
+            const { error: shError } = await supabase.from('stock_history').upsert(stockHistory);
+            if (shError) console.warn('Failed to save stock_history to Supabase:', shError);
+
+            const { error: fbError } = await supabase.from('feedback').upsert(feedback);
+            if (fbError) console.warn('Failed to save feedback to Supabase:', fbError);
+
+            const { error: brError } = await supabase.from('branches').upsert(branches);
+            if (brError) console.warn('Failed to save branches to Supabase:', brError);
+
+            const { error: pcError } = await supabase.from('price_changes').upsert(priceChanges);
+            if (pcError) console.warn('Failed to save price_changes to Supabase:', pcError);
+
+            console.log('Data saved to Supabase successfully');
+        } catch (e) { 
+            console.error('Supabase save failed entirely:', e); 
+        }
+    }
+    function saveAll() {
+        localStorage.setItem(LS.inventory, JSON.stringify(inventory));
+        localStorage.setItem(LS.sales, JSON.stringify(sales));
+        localStorage.setItem(LS.customers, JSON.stringify(customers));
+        localStorage.setItem(LS.users, JSON.stringify(users));
+        localStorage.setItem(LS.salesTargets, JSON.stringify(salesTargets));
+        localStorage.setItem(LS.stockHistory, JSON.stringify(stockHistory));
+        localStorage.setItem(LS.feedback, JSON.stringify(feedback));
+        localStorage.setItem(LS.branches, JSON.stringify(branches));
+        localStorage.setItem(LS.priceChanges, JSON.stringify(priceChanges));
+        // Always attempt to save to Supabase after local save
+        saveToSupabase();
+    }
+    async function migrateUsersToHashedPasswords() {
+        let changed = false;
+        for (const u of users) {
+            if (u.password && !/^[a-f0-9]{64}$/.test(u.password)) {
+                u.password = await hashPassword(u.password);
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveAll();
+            console.log('User passwords migrated to hashed format');
+        }
+    }
+
+    /* ========== INIT & UI ========== */
+    function updateDateDisplay() {
+        const now = new Date();
+        document.getElementById('date-display').textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    async function initApp() {
+        updateDateDisplay();
+        setupEventListeners();
+        await syncWithSupabase(); // Load from new DB first, then migrate
+        await migrateUsersToHashedPasswords(); // Ensure hashing after load
+        checkLoginStatus();
+        updateAllBranchDropdowns();
+        console.log('App initialized with new Supabase DB');
+    }
+    function checkLoginStatus() {
+        if (currentUser) showApp();
+        else showLogin();
+    }
+    function showLogin() {
+        document.getElementById('login-page').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+    }
+    function showApp() {
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('username-display').textContent = currentUser.name || currentUser.username;
+        document.getElementById('user-role-display').textContent = currentUser.role;
+        applyRoleVisibility();
+        activateFirstSection();
+        loadSectionData();
+    }
+    async function login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const role = document.getElementById('role-select').value.trim(); // Trim to avoid whitespace issues
+        if (!username || !password || !role) return showLoginError('All fields are required');
+        const hashed = await hashPassword(password);
+        const user = users.find(u => u.username === username && u.password === hashed);
+        if (!user) return showLoginError('Invalid username or password');
+        if (user.role !== role) return showLoginError('Role mismatch');
+        user.lastLogin = new Date().toLocaleString();
+        currentUser = user;
+        localStorage.setItem(LS.currentUser, JSON.stringify(user));
+        document.getElementById('login-error').style.display = 'none';
+        saveAll(); // Save user's last login
+        showApp();
+        console.log(`User ${username} (${role}) logged in successfully`);
+    }
+    function showLoginError(msg) {
+        const el = document.getElementById('login-error');
+        el.textContent = msg;
+        el.style.display = 'block';
+        console.error('Login error:', msg);
+    }
+    function logout() {
+        currentUser = null;
+        localStorage.removeItem(LS.currentUser);
+        showLogin();
+    }
+    function applyRoleVisibility() {
+        const map = {
+            'System Administrator': ['admin-only'],
+            'Management': ['management-only'],
+            'Sales Representative': ['sales-only'],
+            'Inventory Manager': ['inventory-only'],
+            'Marketing Officer': ['marketing-only'],
+            'Accountant': ['accountant-only'],
+            'Unit Manager': ['unit-manager-only']
+        };
+        document.querySelectorAll('.admin-only,.management-only,.sales-only,.inventory-only,.marketing-only,.accountant-only,.unit-manager-only').forEach(el => el.style.display = 'none');
+        const classes = map[currentUser.role] || [];
+        classes.forEach(cls => document.querySelectorAll('.' + cls).forEach(el => el.style.display = el.tagName === 'LI' ? 'flex' : 'block'));
+        console.log(`Applied visibility for role: ${currentUser.role}`);
+    }
+    function setupEventListeners() {
+        document.querySelectorAll('.sidebar-menu li').forEach(li => {
+            li.addEventListener('click', () => {
+                if (li.style.display === 'none') return;
+                const target = li.getAttribute('data-target');
+                document.querySelectorAll('.sidebar-menu li').forEach(i => i.classList.remove('active'));
+                li.classList.add('active');
+                document.querySelectorAll('.module-section').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+                const section = document.getElementById(target);
+                if (section) { section.style.display = 'block'; section.classList.add('active'); loadDataForSection(target); }
+            });
+        });
+        document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; }));
+        const fbc = document.getElementById('feedback-customer');
+        if (fbc) fbc.addEventListener('change', function () { if (this.value === 'new') { isAddingCustomerForFeedback = true; showAddCustomerModal(); } });
+    }
+    function activateFirstSection() {
+        document.querySelectorAll('.module-section').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+        document.querySelectorAll('.sidebar-menu li').forEach(i => i.classList.remove('active'));
+        const firstVisible = Array.from(document.querySelectorAll('.sidebar-menu li')).find(li => li.style.display !== 'none');
+        if (firstVisible) { 
+            firstVisible.classList.add('active'); 
+            const tgt = firstVisible.getAttribute('data-target'); 
+            const sec = document.getElementById(tgt); 
+            if (sec) { 
+                sec.style.display = 'block'; 
+                sec.classList.add('active'); 
+                loadDataForSection(tgt); 
+            } 
+        }
+    }
+    function loadSectionData() {
+        const active = document.querySelector('.module-section.active');
+        if (active) loadDataForSection(active.id);
+    }
+    function loadDataForSection(target) {
+        switch (target) {
+            case 'admin-module': loadAdminData(); break;
+            case 'dashboard-module': loadDashboardData(); break;
+            case 'management-module': loadManagementData(); break;
+            case 'inventory-module': loadInventoryData(); break;
+            case 'sales-module': loadSalesData(); updateSalesTargetDisplay(); break;
+            case 'customer-module': loadCustomerData(); break;
+            case 'marketing-module': updateMarketingReport(); break;
+            case 'marketing-inventory-summary': loadMarketingInventorySummary(); break;
+            case 'price-change-log': loadPriceChangeLog(); break;
+            case 'feedback-module': loadFeedbackData(); break;
+            case 'feedback-management': loadFeedbackManagementData(); break;
+            case 'branch-module': loadBranchData(); break;
+            case 'accountant-module': loadAccountantSalesPerformance(); break;
+            case 'accountant-stock-module': loadAccountantStock(); break;
+            case 'unit-manager-module': loadUnitManagerData(); break;
+            default: console.warn('Unknown section:', target);
+        }
+    }
+
+    /* ========== BRANCH MANAGEMENT ========== */
+    function loadBranchData() {
+        const tbody = document.getElementById('branch-management-body');
+        tbody.innerHTML = '';
+        if (!branches.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No branches</td></tr>'; return; }
+        branches.forEach(b => tbody.innerHTML += `<tr><td>${b.name}</td><td>${b.manager}</td><td>${b.contact}</td><td>${b.address}</td><td>${b.status}</td><td><button class="btn btn-outline" onclick="showEditBranchModal(${b.id})">Edit</button> <button class="btn btn-danger" onclick="deleteBranch(${b.id})">Delete</button></td></tr>`);
+    }
+    function showAddBranchModal() { document.getElementById('add-branch-modal').style.display = 'flex'; }
+    function closeAddBranchModal() { document.getElementById('add-branch-modal').style.display = 'none'; }
+    function addBranch() {
+        const name = document.getElementById('branch-name').value.trim();
+        if (!name) return alert('Branch name required');
+        if (branches.some(b => b.name.toLowerCase() === name.toLowerCase())) return alert('Branch name exists');
+        branches.push({
+            id: branches.length ? Math.max(...branches.map(b => b.id)) + 1 : 1,
+            name, manager: document.getElementById('branch-manager').value.trim(),
+            contact: document.getElementById('branch-contact').value.trim(),
+            address: document.getElementById('branch-address').value.trim(),
+            status: document.getElementById('branch-status').value
+        });
+        saveAll(); closeAddBranchModal(); loadBranchData(); updateAllBranchDropdowns(); alert('Branch added');
+    }
+
+    /* ========== INVENTORY ========== */
+    function loadInventoryData() {
+        const tbody = document.getElementById('inventory-table-body-2');
+        tbody.innerHTML = '';
+        if (!inventory.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">No inventory</td></tr>'; return; }
+        inventory.forEach(i => tbody.innerHTML += `<tr><td>${i.name}</td><td>${i.type}</td><td>${i.spec}</td><td>${i.serial || ''}</td><td>${i.quantity}</td><td>${formatCurrency(i.costPrice)}</td><td>${formatCurrency(i.sellingPrice)}</td><td>${i.profitMargin || 0}%</td><td>${i.status}</td></tr>`);
+    }
+    function filterInventory() {
+        const q = document.getElementById('inventory-search').value.toLowerCase();
+        const cat = document.getElementById('category-filter').value;
+        document.querySelectorAll('#inventory-table-body-2 tr').forEach(tr => {
+            const matchQ = !q || tr.textContent.toLowerCase().includes(q);
+            const matchC = cat === 'all' || (tr.cells[1] && tr.cells[1].textContent === cat);
+            tr.style.display = matchQ && matchC ? '' : 'none';
+        });
+    }
+    function showAddStockModal() {
+        document.getElementById('add-stock-modal').style.display = 'flex';
+    }
+    function closeAddStockModal() {
+        document.getElementById('add-stock-modal').style.display = 'none';
+        clearAddStockForm();
+    }
+    function clearAddStockForm() {
+        document.getElementById('stock-type').value = '';
+        document.getElementById('stock-name').value = '';
+        document.getElementById('stock-spec').value = '';
+        document.getElementById('stock-cost-price').value = '';
+        document.getElementById('stock-markup').value = '20';
+        document.getElementById('stock-selling-price').value = '';
+        document.getElementById('stock-min-disc').value = '0';
+        document.getElementById('stock-max-disc').value = '5';
+    }
+    function addStock() {
+        const type = document.getElementById('stock-type').value;
+        const name = document.getElementById('stock-name').value.trim();
+        if (!type || !name) return alert('Type and name required');
+        const costPrice = parseFormattedNumber(document.getElementById('stock-cost-price').value);
+        const markup = Number(document.getElementById('stock-markup').value) || 0;
+        const sellingPrice = parseFormattedNumber(document.getElementById('stock-selling-price').value) || Math.round(costPrice * (1 + markup / 100));
+        const minDisc = Number(document.getElementById('stock-min-disc').value) || 0;
+        const maxDisc = Number(document.getElementById('stock-max-disc').value) || 0;
+        const newItem = {
+            id: inventory.length ? Math.max(...inventory.map(i => i.id)) + 1 : 1,
+            type, name, spec: document.getElementById('stock-spec').value.trim(),
+            serial: '', quantity: 0, costPrice, sellingPrice, profitMargin: markup,
+            status: 'Out of Stock', minDiscount: minDisc, maxDiscount: maxDisc
+        };
+        inventory.push(newItem);
+        stockHistory.push({ date: new Date().toISOString(), product: name, type, quantity: 0, costPrice, totalCost: 0, addedBy: currentUser.name || currentUser.username, serials: '' });
+        saveAll(); closeAddStockModal(); loadInventoryData(); loadAdminStockManagement(); loadMarketingInventorySummary();
+        alert('Product added (qty 0). Use Add Quantity to stock.');
+    }
+    function showEditStockModal(id) {
+        const item = inventory.find(i => i.id === id);
+        if (!item) return;
+        document.getElementById('edit-stock-id').value = item.id;
+        document.getElementById('edit-stock-type').value = item.type;
+        document.getElementById('edit-stock-name').value = item.name;
+        document.getElementById('edit-stock-spec').value = item.spec;
+        document.getElementById('edit-stock-quantity').value = item.quantity;
+        document.getElementById('edit-stock-cost').value = item.costPrice.toLocaleString();
+        document.getElementById('edit-stock-markup').value = item.profitMargin || 20;
+        document.getElementById('edit-stock-selling').value = item.sellingPrice.toLocaleString();
+        document.getElementById('edit-stock-status').value = item.status;
+        document.getElementById('edit-stock-min-disc').value = item.minDiscount || 0;
+        document.getElementById('edit-stock-max-disc').value = item.maxDiscount || 5;
+        document.getElementById('edit-stock-modal').style.display = 'flex';
+    }
+    function closeEditStockModal() { document.getElementById('edit-stock-modal').style.display = 'none'; }
+    function updateStock() {
+        const id = Number(document.getElementById('edit-stock-id').value);
+        const item = inventory.find(i => i.id === id);
+        if (!item) return alert('Product not found');
+        const oldSelling = item.sellingPrice;
+        item.type = document.getElementById('edit-stock-type').value;
+        item.name = document.getElementById('edit-stock-name').value.trim();
+        item.spec = document.getElementById('edit-stock-spec').value.trim();
+        item.quantity = Number(document.getElementById('edit-stock-quantity').value) || 0;
+        item.costPrice = parseFormattedNumber(document.getElementById('edit-stock-cost').value);
+        item.profitMargin = Number(document.getElementById('edit-stock-markup').value) || 0;
+        item.sellingPrice = parseFormattedNumber(document.getElementById('edit-stock-selling').value);
+        item.status = document.getElementById('edit-stock-status').value;
+        item.minDiscount = Number(document.getElementById('edit-stock-min-disc').value) || 0;
+        item.maxDiscount = Number(document.getElementById('edit-stock-max-disc').value) || 0;
+        if (item.sellingPrice !== oldSelling) {
+            priceChanges.push({ date: new Date().toISOString(), product: item.name, oldPrice: oldSelling, newPrice: item.sellingPrice, changedBy: currentUser.name || currentUser.username });
+        }
+        saveAll(); closeEditStockModal(); loadInventoryData(); loadAdminStockManagement(); loadMarketingInventorySummary(); loadPriceChangeLog();
+        alert('Product updated');
+    }
+    function deleteStock(id) {
+        showConfirmation('Delete this product?', () => {
+            inventory = inventory.filter(i => i.id !== id);
+            saveAll(); loadInventoryData(); loadAdminStockManagement(); loadMarketingInventorySummary();
+            alert('Deleted');
+        });
+    }
+    function showAddQuantityModal() {
+        const sel = document.getElementById('add-quantity-product');
+        sel.innerHTML = '<option value="">Select Product</option>' + inventory.filter(i => i.quantity > 0).map(i => `<option value="${i.id}">${i.name} (${i.type}) – qty:${i.quantity}</option>`).join('');
+        // Clear previous inputs
+        document.getElementById('add-quantity-serial-prefix').value = '';
+        document.getElementById('add-quantity-serial-start').value = '';
+        document.getElementById('add-quantity-serial-end').value = '';
+        document.getElementById('add-quantity-serial-manual').value = '';
+        document.getElementById('add-quantity').value = 1;
+
+        document.getElementById('add-quantity-modal').style.display = 'flex';
+    }
+    function closeAddQuantityModal() { document.getElementById('add-quantity-modal').style.display = 'none'; }
+    function addStockQuantity() {
+        const prodId = Number(document.getElementById('add-quantity-product').value);
+        const qty = Number(document.getElementById('add-quantity').value);
+        const prefix = document.getElementById('add-quantity-serial-prefix').value.trim();
+        const start = document.getElementById('add-quantity-serial-start').value.trim();
+        const end = document.getElementById('add-quantity-serial-end').value.trim();
+        const manualSerials = document.getElementById('add-quantity-serial-manual').value.trim();
+
+        if (!prodId || qty <= 0) return alert('Select product and quantity');
+        const item = inventory.find(i => i.id === prodId);
+        if (!item) return alert('Product not found');
+
+        let generatedSerials = [];
+        if (prefix && start && end) {
+            const rangeString = `${prefix}${start}-${end}`;
+            generatedSerials = explodeRange(rangeString);
+            if (generatedSerials.length !== qty) {
+                return alert(`Quantity (${qty}) does not match the number of generated serials (${generatedSerials.length}). Please adjust.`);
+            }
+        } else if ((prefix && (start || end)) || (start && !end) || (end && !start)) {
+            return alert('For serial range generation, Prefix, Start, and End must all be provided.');
+        }
+
+        let allSerials = [];
+        if (generatedSerials.length) {
+            allSerials = generatedSerials;
+        }
+        if (manualSerials) {
+            allSerials = [...allSerials, ...manualSerials.split(',').map(s => s.trim()).filter(Boolean)];
+        }
+
+        if (allSerials.length && allSerials.length !== qty) {
+            return alert(`Total serial numbers (${allSerials.length}) do not match the quantity to add (${qty}).`);
+        }
+
+        item.quantity += qty;
+        item.status = item.quantity > 5 ? 'In Stock' : item.quantity > 0 ? 'Low Stock' : 'Out of Stock';
+
+        if (allSerials.length) {
+            const existing = item.serial ? item.serial.split(',').map(s => s.trim()) : [];
+            item.serial = Array.from(new Set([...existing, ...allSerials])).join(',');
+        }
+
+        stockHistory.push({ date: new Date().toISOString(), product: item.name, type: item.type, quantity: qty, costPrice: item.costPrice, totalCost: item.costPrice * qty, addedBy: currentUser.name || currentUser.username, serials: allSerials.join(',') });
+        saveAll(); closeAddQuantityModal(); loadInventoryData(); loadAdminStockManagement(); loadMarketingInventorySummary(); updateDashboardStats();
+        alert('Quantity added');
+    }
+    function showAddSerialModal() {
+        const sel = document.getElementById('add-serial-product');
+        sel.innerHTML = '<option value="">Select Product</option>' + inventory.map(i => `<option value="${i.id}">${i.name} (${i.type})</option>`).join('');
+        // Clear previous inputs
+        document.getElementById('add-serial-prefix').value = '';
+        document.getElementById('add-serial-start').value = '';
+        document.getElementById('add-serial-end').value = '';
+        document.getElementById('add-serial-manual').value = '';
+
+        document.getElementById('add-serial-modal').style.display = 'flex';
+    }
+    function closeAddSerialModal() { document.getElementById('add-serial-modal').style.display = 'none'; }
+    function addSerialNumber() {
+        const prodId = Number(document.getElementById('add-serial-product').value);
+        const prefix = document.getElementById('add-serial-prefix').value.trim();
+        const start = document.getElementById('add-serial-start').value.trim();
+        const end = document.getElementById('add-serial-end').value.trim();
+        const manualSerials = document.getElementById('add-serial-manual').value.trim();
+
+        if (!prodId) return alert('Select product');
+
+        const item = inventory.find(i => i.id === prodId);
+        if (!item) return alert('Product not found');
+
+        let allSerials = [];
+        if (prefix && start && end) {
+            const rangeString = `${prefix}${start}-${end}`;
+            allSerials = explodeRange(rangeString);
+        } else if ((prefix && (start || end)) || (start && !end) || (end && !start)) {
+            return alert('For serial range generation, Prefix, Start, and End must all be provided.');
+        }
+
+        if (manualSerials) {
+            allSerials = [...allSerials, ...manualSerials.split(',').map(s => s.trim()).filter(Boolean)];
+        }
+
+        if (!allSerials.length) return alert('No serial numbers provided or generated.');
+
+        const existing = item.serial ? item.serial.split(',').map(s => s.trim()) : [];
+        item.serial = Array.from(new Set([...existing, ...allSerials])).join(',');
+
+        saveAll(); closeAddSerialModal(); loadInventoryData(); loadAdminStockManagement();
+        alert('Serials added');
+    }
+    function calculateSellingPriceFromCost() {
+        const cost = parseFormattedNumber(document.getElementById('stock-cost-price').value);
+        const markup = Number(document.getElementById('stock-markup').value) || 0;
+        document.getElementById('stock-selling-price').value = Math.round(cost * (1 + markup / 100)).toLocaleString();
+    }
+    function calculateEditSellingPrice() {
+        const cost = parseFormattedNumber(document.getElementById('edit-stock-cost').value);
+        const markup = Number(document.getElementById('edit-stock-markup').value) || 0;
+        document.getElementById('edit-stock-selling').value = Math.round(cost * (1 + markup / 100)).toLocaleString();
+    }
+    function updateSpecificationField() {
+        const type = document.getElementById('stock-type').value;
+        document.getElementById('spec-label').textContent = type ? `${type} Specification` : 'Specification';
+    }
+
+    /* ========== SALES ========== */
+    function loadSalesData() {
+        const tbody = document.getElementById('sales-table-body-2');
+        tbody.innerHTML = '';
+        const today = new Date().toDateString();
+        // Filter sales to only show those made by the current sales rep today
+        const mySales = sales.filter(s => new Date(s.time).toDateString() === today && s.salesRep === (currentUser.name || currentUser.username));
+        if (!mySales.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No sales today</td></tr>'; return; }
+        mySales.slice().reverse().forEach(s => tbody.innerHTML += `<tr><td>${s.productName}</td><td>${s.customerName}</td><td>${formatCurrency(s.amount)}</td><td>${formatCurrency(s.discount)}</td><td>${formatCurrency(s.profit)}</td><td>${new Date(s.time).toLocaleString()}</td></tr>`);
+    }
+    function showRecordSaleModal() {
+        const prodSel = document.getElementById('sale-product');
+        prodSel.innerHTML = '<option value="">Select Product</option>' + inventory.filter(i => i.quantity > 0).map(i => `<option value="${i.id}">${i.name} – ${i.spec} – ${formatCurrency(i.sellingPrice)}</option>`).join('');
+        const custSel = document.getElementById('sale-customer');
+        custSel.innerHTML = '<option value="">Select Customer</option>' + customers.map(c => `<option value="${c.id}">${c.firstName} ${c.lastName} – ${c.phone}</option>`).join('');
+        document.getElementById('sale-branch').value = currentUser.branch;
+        document.getElementById('record-sale-modal').style.display = 'flex';
+        updateSaleDetails();
+    }
+    function closeRecordSaleModal() { document.getElementById('record-sale-modal').style.display = 'none'; }
+    function updateSaleDetails() {
+        const prodId = Number(document.getElementById('sale-product').value);
+        const product = inventory.find(i => i.id === prodId);
+        if (!product) {
+            document.getElementById('sale-amount').value = '';
+            document.getElementById('sale-profit').value = '';
+            document.getElementById('sale-discount-hint').textContent = 'Max discount: ₦0 (0%)';
+            return;
+        }
+        const qty = Number(document.getElementById('sale-quantity').value) || 1;
+        const maxDiscPerc = product.maxDiscount || 5;
+        const maxDiscAmount = Math.round((product.sellingPrice * qty) * (maxDiscPerc / 100));
+        let discount = parseFormattedNumber(document.getElementById('sale-discount').value);
+        if (discount > maxDiscAmount) {
+            discount = maxDiscAmount;
+            document.getElementById('sale-discount').value = discount.toLocaleString();
+        }
+        const amount = (product.sellingPrice * qty) - discount;
+        const profit = ((product.sellingPrice - product.costPrice) * qty) - discount;
+        document.getElementById('sale-amount').value = amount.toLocaleString();
+        document.getElementById('sale-profit').value = profit.toLocaleString();
+        document.getElementById('sale-discount-hint').textContent = `Max discount: ${formatCurrency(maxDiscAmount)} (${maxDiscPerc}%)`;
+    }
+    function recordSale() {
+        const prodId = Number(document.getElementById('sale-product').value);
+        const custId = Number(document.getElementById('sale-customer').value);
+        const product = inventory.find(i => i.id === prodId);
+        const customer = customers.find(c => c.id === custId);
+        if (!product || !customer) return alert('Select product and customer');
+        const qty = Number(document.getElementById('sale-quantity').value) || 1;
+        if (product.quantity < qty) return alert('Not enough stock');
+        let discount = parseFormattedNumber(document.getElementById('sale-discount').value);
+        const maxDiscAmount = Math.round((product.sellingPrice * qty) * ((product.maxDiscount || 5) / 100));
+        if (discount > maxDiscAmount) discount = maxDiscAmount;
+        const amount = (product.sellingPrice * qty) - discount;
+        const profit = ((product.sellingPrice - product.costPrice) * qty) - discount;
+        sales.push({
+            id: sales.length ? Math.max(...sales.map(s => s.id)) + 1 : 1,
+            productId: prodId, productName: product.name, customerId: custId, customerName: `${customer.firstName} ${customer.lastName}`,
+            salesRep: currentUser.name || currentUser.username, branch: currentUser.branch, quantity: qty, amount, discount, profit,
+            time: new Date().toISOString()
+        });
+        product.quantity -= qty;
+        product.status = product.quantity > 5 ? 'In Stock' : product.quantity > 0 ? 'Low Stock' : 'Out of Stock';
+        customer.totalPurchases = (customer.totalPurchases || 0) + amount;
+        customer.lastPurchase = new Date().toISOString();
+        saveAll(); closeRecordSaleModal(); loadSalesData(); loadInventoryData(); updateSalesTargetDisplay(); updateDashboardStats();
+        alert('Sale recorded');
+    }
+    function updateSalesTargetDisplay() {
+        if (currentUser.role !== 'Sales Representative') return;
+        const now = new Date();
+        const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const target = salesTargets.find(t => t.staff === (currentUser.name || currentUser.username) && t.month === month);
+        const targetValue = target ? target.value : 0;
+        const monthSales = sales.filter(s => {
+            const d = new Date(s.time);
+            const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            return m === month && s.salesRep === (currentUser.name || currentUser.username);
+        });
+        const achieved = monthSales.reduce((a, b) => a + b.amount, 0);
+        const remaining = Math.max(0, targetValue - achieved);
+        const progress = targetValue ? Math.min(100, Math.round((achieved / targetValue) * 100)) : 0;
+        document.getElementById('sales-target').textContent = formatCurrency(targetValue);
+        document.getElementById('sales-achieved').textContent = formatCurrency(achieved);
+        document.getElementById('sales-remaining').textContent = formatCurrency(remaining);
+        document.getElementById('sales-progress').textContent = `${progress}%`;
+    }
+
+    /* ========== CUSTOMER ========== */
+    function loadCustomerData() {
+        const tbody = document.getElementById('customer-table-body');
+        tbody.innerHTML = '';
+        if (!customers.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No customers</td></tr>'; return; }
+        customers.forEach(c => tbody.innerHTML += `<tr><td>${c.firstName} ${c.lastName}</td><td>${c.phone}</td><td>${c.lga}</td><td>${c.house}</td><td>${formatCurrency(c.totalPurchases || 0)}</td><td>${c.lastPurchase ? new Date(c.lastPurchase).toLocaleDateString() : '-'}</td><td><button class="btn btn-outline" onclick="viewCustomer(${c.id})">View</button></td></tr>`);
+    }
+    function showAddCustomerModal() { document.getElementById('add-customer-modal').style.display = 'flex'; }
+    function closeAddCustomerModal() { document.getElementById('add-customer-modal').style.display = 'none'; }
+    function addCustomer() {
+        const first = document.getElementById('customer-firstname').value.trim();
+        const last = document.getElementById('customer-lastname').value.trim();
+        const phone = document.getElementById('customer-phone').value.trim();
+        if (!first || !last || !phone) return alert('First name, last name and phone required');
+        const newC = {
+            id: customers.length ? Math.max(...customers.map(c => c.id)) + 1 : 1,
+            firstName: first, lastName: last, phone,
+            lga: document.getElementById('customer-lga').value.trim(),
+            house: document.getElementById('customer-house').value.trim(),
+            totalPurchases: 0, lastPurchase: null
+        };
+        customers.push(newC);
+        saveAll(); loadCustomerData(); closeAddCustomerModal();
+        if (isAddingCustomerForFeedback) {
+            const fbcs = document.getElementById('feedback-customer');
+            fbcs.innerHTML = '<option value="">Select Customer</option><option value="new">+ Add New Customer</option>' + customers.map(c => `<option value="${c.id}">${c.firstName} ${c.lastName} – ${c.phone}</option>`).join('');
+            fbcs.value = newC.id;
+            isAddingCustomerForFeedback = false;
+        }
+        alert('Customer added');
+    }
+    function viewCustomer(id) {
+        const c = customers.find(x => x.id === id);
+        if (!c) return;
+        alert(`Customer: ${c.firstName} ${c.lastName}\nPhone: ${c.phone}\nLGA: ${c.lga}\nAddress: ${c.house}\nTotal Purchases: ${formatCurrency(c.totalPurchases)}`);
+    }
+    function filterCustomers() {
+        const q = document.getElementById('customer-search').value.toLowerCase();
+        document.querySelectorAll('#customer-table-body tr').forEach(tr => tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none');
+    }
+
+    /* ========== MARKETING ========== */
+    function loadMarketingInventorySummary() {
+        let totalQty = 0, totalCost = 0, totalProfit = 0;
+        inventory.forEach(i => { totalQty += i.quantity; totalCost += i.costPrice * i.quantity; totalProfit += (i.sellingPrice - i.costPrice) * i.quantity; });
+        document.getElementById('mis-total-products').textContent = inventory.length;
+        document.getElementById('mis-total-qty').textContent = totalQty;
+        document.getElementById('mis-stock-value').textContent = formatCurrency(totalCost);
+        document.getElementById('mis-est-profit').textContent = formatCurrency(totalProfit);
+        const tbody = document.getElementById('mis-products-body');
+        tbody.innerHTML = '';
+        inventory.forEach(i => tbody.innerHTML += `<tr><td>${i.name}</td><td>${i.type}</td><td>${i.quantity}</td><td>${formatCurrency(i.costPrice)}</td><td>${formatCurrency(i.sellingPrice)}</td><td>${i.minDiscount || 0}%</td><td>${i.maxDiscount || 5}%</td></tr>`);
+    }
+    function updateMarketingReport() {
+        const tbody = document.getElementById('marketing-report-body');
+        tbody.innerHTML = '';
+        const cat = document.getElementById('marketing-category-filter').value;
+        const from = document.getElementById('marketing-from-date').value ? new Date(document.getElementById('marketing-from-date').value) : null;
+        const to = document.getElementById('marketing-to-date').value ? new Date(document.getElementById('marketing-to-date').value) : null;
+        if (to) to.setHours(23, 59, 59, 999);
+        let filtered = sales.slice();
+        if (from) filtered = filtered.filter(s => new Date(s.time) >= from);
+        if (to) filtered = filtered.filter(s => new Date(s.time) <= to);
+        const map = {};
+        filtered.forEach(s => {
+            const inv = inventory.find(i => i.id === s.productId) || { name: s.productName, type: '' };
+            if (cat !== 'all' && inv.type !== cat) return;
+            if (!map[s.productName]) map[s.productName] = { units: 0, revenue: 0, discount: 0, cost: 0, profit: 0 };
+            map[s.productName].units += s.quantity || 1;
+            map[s.productName].revenue += s.amount || 0;
+            map[s.productName].discount += s.discount || 0;
+            map[s.productName].profit += s.profit || 0;
+            if (inv) map[s.productName].cost += (inv.costPrice || 0) * (s.quantity || 1);
+        });
+        const rows = Object.entries(map).map(([p, v]) => ({ product: p, units: v.units, revenue: v.revenue, discount: v.discount, cost: v.cost, profit: v.profit, margin: v.revenue ? ((v.profit / v.revenue) * 100).toFixed(2) + '%' : '0%' }));
+        if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No data</td></tr>'; return; }
+        rows.forEach(r => tbody.innerHTML += `<tr><td>${r.product}</td><td>${r.units}</td><td>${formatCurrency(r.revenue)}</td><td>${formatCurrency(r.discount)}</td><td>${formatCurrency(r.cost)}</td><td>${formatCurrency(r.profit)}</td><td>${r.margin}</td></tr>`);
+    }
+    function exportMarketingReport() {
+        updateMarketingReport();
+        const rows = Array.from(document.querySelectorAll('#marketing-report-body tr')).map(tr => Array.from(tr.cells).map(td => td.textContent));
+        if (!rows.length) return alert('No data');
+        rows.unshift(['Product', 'Units', 'Revenue', 'Discount', 'Cost', 'Profit', 'Margin']);
+        downloadCSV('marketing_report.csv', rows);
+    }
+
+    /* ========== ACCOUNTANT ========== */
+    function loadAccountantSalesPerformance() {
+        const tbody = document.getElementById('acct-sales-performance-body');
+        tbody.innerHTML = '';
+        const reps = users.filter(u => u.role === 'Sales Representative');
+        if (!reps.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No reps</td></tr>'; return; }
+        reps.forEach(rep => {
+            const repSales = sales.filter(s => s.salesRep === rep.name);
+            const count = repSales.length;
+            const revenue = repSales.reduce((a, b) => a + b.amount, 0);
+            const profit = repSales.reduce((a, b) => a + b.profit, 0);
+            const discount = repSales.reduce((a, b) => a + (b.discount || 0), 0);
+            tbody.innerHTML += `<tr><td>${rep.name}</td><td>${rep.branch}</td><td>${count}</td><td>${formatCurrency(revenue)}</td><td>${formatCurrency(profit)}</td><td>${formatCurrency(discount)}</td></tr>`;
+        });
+        console.log('Accountant sales performance loaded');
+    }
+    function loadAccountantStock() {
+        const tbody = document.getElementById('acct-low-stock-body');
+        tbody.innerHTML = '';
+        const low = inventory.filter(i => i.quantity <= 5);
+        if (!low.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">No low stock</td></tr>'; return; }
+        low.forEach(i => tbody.innerHTML += `<tr><td>${i.name}</td><td>${i.type}</td><td>${i.quantity}</td><td>${formatCurrency(i.costPrice)}</td><td>${formatCurrency(i.sellingPrice)}</td></tr>`);
+        console.log('Accountant stock overview loaded');
+    }
+
+    /* ========== UNIT MANAGER ========== */
+    function loadUnitManagerData() {
+        const now = new Date();
+        const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const reps = users.filter(u => u.role === 'Sales Representative');
+        document.getElementById('um-rep-count').textContent = reps.length;
+        let teamTarget = 0, teamAchieved = 0;
+        const tbody = document.getElementById('um-team-performance-body');
+        tbody.innerHTML = '';
+        reps.forEach(rep => {
+            const target = salesTargets.find(t => t.staff === rep.name && t.month === month);
+            const targetVal = target ? target.value : 0;
+            teamTarget += targetVal;
+            const repSales = sales.filter(s => s.salesRep === rep.name && new Date(s.time).toISOString().startsWith(month));
+            const achieved = repSales.reduce((a, b) => a + b.amount, 0);
+            teamAchieved += achieved;
+            const remaining = Math.max(0, targetVal - achieved);
+            const progress = targetVal ? Math.min(100, Math.round((achieved / targetVal) * 100)) : 0;
+            tbody.innerHTML += `<tr><td>${rep.name}</td><td>${rep.branch}</td><td>${formatCurrency(targetVal)}</td><td>${formatCurrency(achieved)}</td><td>${formatCurrency(remaining)}</td><td>${progress}%</td></tr>`;
+        });
+        document.getElementById('um-team-target').textContent = formatCurrency(teamTarget);
+        document.getElementById('um-team-achieved').textContent = formatCurrency(teamAchieved);
+        document.getElementById('um-team-progress').textContent = teamTarget ? `${Math.min(100, Math.round((teamAchieved / teamTarget) * 100))}%` : '0%';
+        console.log('Unit Manager data loaded');
+    }
+
+    /* ========== FEEDBACK ========== */
+    function showAddFeedbackModal() {
+        const sel = document.getElementById('feedback-customer');
+        sel.innerHTML = '<option value="">Select Customer</option><option value="new">+ Add New Customer</option>' + customers.map(c => `<option value="${c.id}">${c.firstName} ${c.lastName} – ${c.phone}</option>`).join('');
+        updateAllBranchDropdowns();
+        document.getElementById('add-feedback-modal').style.display = 'flex';
+    }
+    function closeAddFeedbackModal() { document.getElementById('add-feedback-modal').style.display = 'none'; }
+    function addFeedback() {
+        const custId = document.getElementById('feedback-customer').value;
+        const text = document.getElementById('feedback-text').value.trim();
+        if (!custId || custId === 'new' || !text) return alert('Select customer and enter feedback');
+        const customer = customers.find(c => c.id === Number(custId));
+        if (!customer) return alert('Customer not found');
+        feedback.push({
+            id: feedback.length ? Math.max(...feedback.map(f => f.id)) + 1 : 1,
+            customerId: customer.id, customerName: `${customer.firstName} ${customer.lastName}`, customerPhone: customer.phone,
+            type: document.getElementById('feedback-type').value, text, branch: document.getElementById('feedback-branch').value,
+            recordedBy: currentUser.name || currentUser.username, date: new Date().toISOString()
+        });
+        saveAll(); closeAddFeedbackModal(); loadFeedbackData(); loadFeedbackManagementData();
+        alert('Feedback added');
+    }
+    function loadFeedbackData() {
+        const tbody = document.getElementById('feedback-table-body');
+        tbody.innerHTML = '';
+        const mine = feedback.filter(f => f.recordedBy === (currentUser.name || currentUser.username));
+        if (!mine.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">No feedback from you</td></tr>'; return; }
+        mine.slice().reverse().forEach(f => tbody.innerHTML += `<tr><td>${new Date(f.date).toLocaleString()}</td><td>${f.customerName}</td><td>${f.type}</td><td>${f.text}</td><td><button class="btn btn-outline" onclick="viewFeedback(${f.id})">View</button></td></tr>`);
+    }
+    function loadFeedbackManagementData() {
+        const tbody = document.getElementById('feedback-management-body');
+        tbody.innerHTML = '';
+        if (!feedback.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">No feedback</td></tr>'; return; }
+        feedback.slice().reverse().forEach(f => tbody.innerHTML += `<tr><td>${new Date(f.date).toLocaleString()}</td><td>${f.customerName}</td><td>${f.customerPhone}</td><td>${f.type}</td><td>${f.text.substring(0, 50)}...</td><td>${f.branch}</td><td>${f.recordedBy}</td><td><button class="btn btn-outline" onclick="viewFeedback(${f.id})">View</button> <button class="btn btn-danger" onclick="deleteFeedback(${f.id})">Delete</button></td></tr>`);
+    }
+    function viewFeedback(id) {
+        const f = feedback.find(ff => ff.id === id);
+        if (!f) return;
+        alert(`Customer: ${f.customerName}\nPhone: ${f.customerPhone}\nType: ${f.type}\nFeedback: ${f.text}\nBranch: ${f.branch}\nRecorded By: ${f.recordedBy}\nDate: ${new Date(f.date).toLocaleString()}`);
+    }
+    function deleteFeedback(id) {
+        showConfirmation('Delete this feedback?', () => {
+            feedback = feedback.filter(f => f.id !== id);
+            saveAll(); loadFeedbackManagementData();
+            alert('Deleted');
+        });
+    }
+    function filterFeedback() {
+        const type = document.getElementById('feedback-type-filter').value;
+        const q = document.getElementById('feedback-search').value.toLowerCase();
+        const branch = document.getElementById('feedback-branch-filter').value;
+        document.querySelectorAll('#feedback-management-body tr').forEach(tr => {
+            const matchType = type === 'all' || (tr.cells[3] && tr.cells[3].textContent === type);
+            const matchQ = !q || tr.textContent.toLowerCase().includes(q);
+            const matchBranch = branch === 'all' || (tr.cells[5] && tr.cells[5].textContent === branch);
+            tr.style.display = matchType && matchQ && matchBranch ? '' : 'none';
+        });
+    }
+    function refreshFeedbackData() { loadFeedbackManagementData(); }
+
+    /* ========== PRICE CHANGE LOG ========== */
+    function loadPriceChangeLog() {
+        const tbody = document.getElementById('price-change-body');
+        tbody.innerHTML = '';
+        if (!priceChanges.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">No price changes</td></tr>'; return; }
+        priceChanges.slice().reverse().forEach(p => tbody.innerHTML += `<tr><td>${new Date(p.date).toLocaleString()}</td><td>${p.product}</td><td>${formatCurrency(p.oldPrice)}</td><td>${formatCurrency(p.newPrice)}</td><td>${p.changedBy}</td></tr>`);
+    }
+
+    /* ========== USER / STAFF ========== */
+    function loadAdminData() {
+        updateDashboardStats();
+        const tbody = document.getElementById('admin-user-management-body');
+        const tbodyStock = document.getElementById('admin-stock-management-body');
+        tbody.innerHTML = '';
+        tbodyStock.innerHTML = '';
+        if (!users.length) { const placeholder = '<tr><td colspan="7" style="text-align:center">No users</td></tr>'; tbody.innerHTML = placeholder; }
+        else users.forEach(u => tbody.innerHTML += `<tr><td>${u.username}</td><td>${u.name || ''}</td><td>${u.role}</td><td>${u.branch || ''}</td><td>${u.lastLogin || '-'}</td><td>${u.status || 'Active'}</td><td><button class="btn btn-outline" onclick="showEditStaffModal(${u.id})">Edit</button> <button class="btn btn-danger" onclick="removeStaff(${u.id})">Remove</button></td></tr>`);
+        if (!inventory.length) tbodyStock.innerHTML = '<tr><td colspan="9" style="text-align:center">No inventory</td></tr>';
+        else inventory.forEach(i => tbodyStock.innerHTML += `<tr><td>${i.name}</td><td>${i.type}</td><td>${i.spec}</td><td>${i.quantity}</td><td>${formatCurrency(i.costPrice)}</td><td>${formatCurrency(i.sellingPrice)}</td><td>${i.profitMargin || 0}%</td><td>${i.status}</td><td><button class="btn btn-outline" onclick="showEditStockModal(${i.id})">Edit</button> <button class="btn btn-danger" onclick="deleteStock(${i.id})">Delete</button></td></tr>`);
+        document.getElementById('total-users').textContent = users.length;
+        document.getElementById('total-customers').textContent = customers.length;
+    }
+    function showAddStaffModal() {
+        updateAllBranchDropdowns();
+        document.getElementById('add-staff-modal').style.display = 'flex';
+    }
+    function closeAddStaffModal() { document.getElementById('add-staff-modal').style.display = 'none'; }
+    async function addStaff() {
+        const username = document.getElementById('staff-username').value.trim();
+        const role = document.getElementById('staff-role').value;
+        if (!username || !role) return alert('Username and role required');
+        if (users.some(u => u.username === username)) return alert('Username exists');
+        const plain = document.getElementById('staff-password').value || 'changeme123';
+        const hashed = await hashPassword(plain);
+        users.push({
+            id: users.length ? Math.max(...users.map(u => u.id)) + 1 : 1,
+            username, role, name: document.getElementById('staff-fullname').value.trim(),
+            branch: document.getElementById('staff-branch').value, password: hashed, lastLogin: '', status: 'Active'
+        });
+        saveAll(); loadAdminData(); closeAddStaffModal();
+        alert('Staff added');
+    }
+    function showEditStaffModal(id) {
+        const user = users.find(u => u.id === id);
+        if (!user) return;
+        updateAllBranchDropdowns();
+        // Assuming there's an edit-staff-modal with corresponding input fields
+        // For now, this function is a placeholder as the HTML for it isn't provided in the original snippet.
+        // If you need this functionality, please provide the HTML for the edit-staff-modal.
+        alert('Edit Staff functionality needs the edit-staff-modal HTML to be fully implemented.');
+    }
+    function closeEditStaffModal() { /* document.getElementById('edit-staff-modal').style.display = 'none'; */ } // Placeholder
+    async function updateStaff() {
+        // Placeholder for update staff logic, requires edit-staff-modal HTML
+        alert('Update Staff functionality needs the edit-staff-modal HTML to be fully implemented.');
+    }
+    function removeStaff(id) {
+        if (currentUser && currentUser.id === id) return alert("You cannot remove yourself");
+        showConfirmation('Remove this user?', () => {
+            users = users.filter(u => u.id !== id);
+            saveAll(); loadAdminData();
+            alert('Removed');
+        });
+    }
+
+    /* ========== DASHBOARD ========== */
+    function updateDashboardStats() {
+        const today = new Date().toDateString();
+        const todays = sales.filter(s => new Date(s.time).toDateString() === today);
+        const dailyRevenue = todays.reduce((a, b) => a + b.amount, 0);
+        const dailyProfit = todays.reduce((a, b) => a + b.profit, 0);
+        const dailyDiscount = todays.reduce((a, b) => a + (b.discount || 0), 0);
+        document.getElementById('daily-sales').textContent = todays.length;
+        document.getElementById('daily-revenue').textContent = formatCurrency(dailyRevenue);
+        document.getElementById('daily-profit').textContent = formatCurrency(dailyProfit);
+        document.getElementById('daily-discount').textContent = formatCurrency(dailyDiscount);
+        const now = new Date();
+        const monthSales = sales.filter(s => {
+            const d = new Date(s.time);
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+        const monthlyRevenue = monthSales.reduce((a, b) => a + b.amount, 0);
+        const monthlyProfit = monthSales.reduce((a, b) => a + b.profit, 0);
+        const monthlyDiscount = monthSales.reduce((a, b) => a + (b.discount || 0), 0);
+        document.getElementById('current-month-sales').textContent = monthSales.length;
+        document.getElementById('current-month-revenue').textContent = formatCurrency(monthlyRevenue);
+        document.getElementById('current-month-profit').textContent = formatCurrency(monthlyProfit);
+        // Assuming there's a 'current-month-discount' element, if not, it will throw an error.
+        // If it's meant to be monthly-discount, then it needs to be added to the HTML.
+        const monthlyDiscountElement = document.getElementById('current-month-discount');
+        if (monthlyDiscountElement) {
+            monthlyDiscountElement.textContent = formatCurrency(monthlyDiscount);
+        }
+
+        document.getElementById('low-stock-count').textContent = inventory.filter(i => i.quantity <= 5).length;
+    }
+    function loadDashboardData() {
+        updateDashboardStats();
+        const tbody = document.getElementById('sales-table-body');
+        tbody.innerHTML = '';
+        const today = new Date().toDateString();
+        const todays = sales.filter(s => new Date(s.time).toDateString() === today);
+        if (!todays.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No sales today</td></tr>'; return; }
+        todays.slice().reverse().forEach(s => tbody.innerHTML += `<tr><td>${s.productName}</td><td>${s.customerName}</td><td>${s.salesRep}</td><td>${s.branch}</td><td>${formatCurrency(s.amount)}</td><td>${formatCurrency(s.profit)}</td><td>${new Date(s.time).toLocaleString()}</td></tr>`);
+        const itbody = document.getElementById('inventory-table-body');
+        itbody.innerHTML = '';
+        inventory.forEach(i => itbody.innerHTML += `<tr><td>${i.name}</td><td>${i.type}</td><td>${i.spec}</td><td>${i.quantity}</td><td>${formatCurrency(i.costPrice)}</td><td>${formatCurrency(i.sellingPrice)}</td><td>${i.status}</td></tr>`);
+    }
+
+    /* ========== MANAGEMENT ========== */
+    function loadManagementData() {
+        updateDashboardStats();
+        // The original HTML snippet does not contain 'sales-team-performance-body' in management-module
+        // Assuming this should be part of 'dashboard-module' or a separate section.
+        // For now, I'll comment out the part that tries to populate it to avoid errors.
+        // const tbody = document.getElementById('sales-team-performance-body');
+        // tbody.innerHTML = '';
+        // const reps = users.filter(u => u.role === 'Sales Representative');
+        // const now = new Date();
+        // const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        // if (!reps.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No reps</td></tr>'; return; }
+        // reps.forEach(rep => {
+        //     const target = salesTargets.find(t => t.staff === rep.name && t.month === month);
+        //     const targetVal = target ? target.value : 0;
+        //     const repSales = sales.filter(s => s.salesRep === rep.name && new Date(s.time).toISOString().startsWith(month));
+        //     const achieved = repSales.reduce((a, b) => a + b.amount, 0);
+        //     const profit = repSales.reduce((a, b) => a + b.profit, 0);
+        //     const progress = targetVal ? Math.min(100, Math.round((achieved / targetVal) * 100)) : 0;
+        //     tbody.innerHTML += `<tr><td>${rep.name}</td><td>${rep.branch}</td><td>${formatCurrency(targetVal)}</td><td>${formatCurrency(achieved)}</td><td>${progress}%</td><td>${formatCurrency(achieved)}</td><td>${formatCurrency(profit)}</td></tr>`;
+        // });
+        loadStockHistory();
+    }
+    function loadStockHistory() {
+        const tbody = document.getElementById('admin-stock-history-body'); // Changed to admin-stock-history-body as it's the only stock history table in the provided HTML.
+        tbody.innerHTML = '';
+        if (!stockHistory.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No history</td></tr>'; return; }
+        stockHistory.slice().reverse().forEach(h => tbody.innerHTML += `<tr><td>${new Date(h.date).toLocaleString()}</td><td>${h.product}</td><td>${h.type}</td><td>${h.quantity}</td><td>${formatCurrency(h.costPrice)}</td><td>${formatCurrency(h.totalCost)}</td><td>${h.addedBy}${h.serials ? ' | ' + h.serials : ''}</td></tr>`);
+    }
+    function refreshManagementData() { loadManagementData(); alert('Refreshed'); }
+
+    /* ========== EXPORT HELPERS ========== */
+    function downloadCSV(filename, rows) {
+        let csv = '\uFEFF';
+        if (Array.isArray(rows[0])) csv += rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+        else {
+            const heads = Object.keys(rows[0]);
+            csv += heads.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\r\n';
+            csv += rows.map(r => heads.map(h => `"${String(r[h] !== undefined && r[h] !== null ? r[h] : '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+        }
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+    function exportManagementReport() {
+        const today = new Date().toDateString();
+        const todays = sales.filter(s => new Date(s.time).toDateString() === today);
+        const summary = { ReportDate: new Date().toLocaleString(), TotalSalesToday: todays.length, TotalRevenueToday: todays.reduce((a, b) => a + b.amount, 0), TotalProfitToday: todays.reduce((a, b) => a + b.profit, 0), TotalDiscountToday: todays.reduce((a, b) => a + (b.discount || 0), 0) };
+        const details = todays.map(s => ({ SaleID: s.id, Product: s.productName, Customer: s.customerName, SalesRep: s.salesRep, Branch: s.branch, Amount: s.amount, Discount: s.discount || 0, Profit: s.profit, Time: new Date(s.time).toLocaleString() }));
+        const heads = Object.keys(summary);
+        let csv = '\uFEFF' + heads.map(h => `"${h}"`).join(',') + '\r\n' + heads.map(h => `"${summary[h]}"`).join(',') + '\r\n\r\n';
+        if (details.length) {
+            const dheads = Object.keys(details[0]);
+            csv += dheads.map(h => `"${h}"`).join(',') + '\r\n';
+            csv += details.map(r => dheads.map(h => `"${r[h] || ''}"`).join(',')).join('\r\n');
+        }
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'management_report.csv';
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+    function exportFeedbackReport() {
+        if (!feedback.length) return alert('No feedback');
+        const rows = feedback.map(f => ({ Date: new Date(f.date).toLocaleString(), Customer: f.customerName, Phone: f.customerPhone, Type: f.type, Feedback: f.text, Branch: f.branch, RecordedBy: f.recordedBy }));
+        downloadCSV('feedback_report.csv', rows);
+    }
+
+    /* ========== CONFIRMATION ========== */
+    function showConfirmation(msg, callback) {
+        document.getElementById('confirmation-message').textContent = msg;
+        document.getElementById('confirm-action-btn').onclick = () => { callback(); closeConfirmationModal(); };
+        document.getElementById('confirmation-modal').style.display = 'flex';
+    }
+    function closeConfirmationModal() { document.getElementById('confirmation-modal').style.display = 'none'; }
+
+    /* ========== DROPDOWN UPDATER ========== */
+    function updateAllBranchDropdowns() {
+        const active = branches.filter(b => b.status === 'Active');
+        const opts = active.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+        ['sale-branch', 'staff-branch', 'edit-staff-branch', 'feedback-branch'].forEach(id => {
+            const s = document.getElementById(id);
+            if (s) s.innerHTML = opts;
+        });
+        const allOpts = '<option value="all">All Branches</option>' + branches.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+        ['branch-filter', 'feedback-branch-filter'].forEach(id => {
+            const s = document.getElementById(id);
+            if (s) s.innerHTML = allOpts;
+        });
+    }
+
+    /* ========== FILTERS ========== */
+    function filterSalesByRep() {
+        const rep = document.getElementById('sales-rep-filter').value;
+        document.querySelectorAll('#sales-table-body tr').forEach(tr => tr.style.display = rep === 'all' || (tr.cells[2] && tr.cells[2].textContent === rep) ? '' : 'none');
+    }
+    function filterSalesByBranch() {
+        const branch = document.getElementById('branch-filter').value;
+        document.querySelectorAll('#sales-table-body tr').forEach(tr => tr.style.display = branch === 'all' || (tr.cells[3] && tr.cells[3].textContent === branch) ? '' : 'none');
+    }
+
+    /* ========== STARTUP ========== */
+    window.onload = initApp;
+    window.addEventListener('beforeunload', saveAll);
+  </script>
+</body>
+</html>
